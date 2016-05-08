@@ -1147,7 +1147,7 @@ def get_subnetid(vm_):
             if not isinstance(tags, list):
                 tags = [tags]
             for tag in tags:
-                if tag['key'] == 'Name' and tag['value'] == subnetname:
+                if tag and tag['key'] == 'Name' and tag['value'] == subnetname:
                     log.debug('AWS Subnet ID of {0} is {1}'.format(
                         subnetname, subnet['subnetId'])
                     )
