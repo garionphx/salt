@@ -1790,7 +1790,7 @@ def request_instance(vm_=None, call=None):
             # Translate any subnet names to ids
             if 'SubnetName' in interface:
                 temp_vm_ = copy.copy(vm_)
-                temp_vm_['subnetname'] = interface['SubnetNet']
+                temp_vm_['subnetname'] = interface['SubnetName']
                 interface['SubnetId'] = get_subnetid(temp_vm_)
 
            # Translate any security group names to ids
