@@ -79,6 +79,7 @@ import uuid
 import pprint
 import logging
 import yaml
+import copy
 
 # Import libs for talking to the EC2 API
 import hmac
@@ -1785,6 +1786,19 @@ def request_instance(vm_=None, call=None):
         eni_devices = []
         for interface in network_interfaces:
             log.debug('Create network interface: {0}'.format(interface))
+
+            # Translate any subnet names to ids
+            if 'SubnetName' in interface:
+                temp_vm_ = copy.copy(vm_)
+                temp_vm_['subnetname'] = interface['SubnetNet']
+                interface['SubnetId'] = get_subnetid(temp_vm_)
+
+           # Translate any security group names to ids
+            if 'SecurityGroupNames' in interface:
+                temp_vm_ = copy.copy(vm_)
+                temp_vm_['securitygroupname'] = interface['SecurityGroupNames']
+                interface['SecurityGroupId'] = securitygroupid(temp_vm_)
+
             _new_eni = _create_eni_if_necessary(interface, vm_)
             eni_devices.append(_new_eni)
         params.update(_param_from_config(spot_prefix + 'NetworkInterface',
