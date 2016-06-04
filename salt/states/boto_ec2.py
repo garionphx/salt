@@ -593,10 +593,10 @@ def instance_present(name, instance_name=None, instance_id=None, image_id=None,
                      security_group_ids=None, security_group_names=None,
                      additional_info=None, tenancy=None,
                      instance_profile_arn=None, instance_profile_name=None,
-                     ebs_optimized=None, network_interfaces=None, 
-                     network_interface_name=None, network_interface_id=None,
-                     attributes=None, target_state=None, public_ip=None, 
-                     allocation_id=None, allocate_eip=False, region=None, 
+                     ebs_optimized=None, network_interfaces=None,
+                     network_interface_names=None, network_interface_ids=None,
+                     attributes=None, target_state=None, public_ip=None,
+                     allocation_id=None, allocate_eip=False, region=None,
                      key=None, keyid=None, profile=None):
     ### TODO - implement 'target_state={running, stopped}'
     '''
@@ -696,10 +696,10 @@ def instance_present(name, instance_name=None, instance_id=None, image_id=None,
         (boto.ec2.networkinterface.NetworkInterfaceCollection) – A
         NetworkInterfaceCollection data structure containing the ENI
         specifications for the instance.
-    network_interface_name
-        (string) - The name of ENI to attach to this instance.
+    network_interface_names
+        (list of strings) - The names of ENIs to attach to this instance.
     network_interface_id
-        (string) - The ID of ENI to attach to this instance.
+        (list of strings) - The IDs of ENIs to attach to this instance.
     attributes
         (dict) - Instance attributes and value to be applied to the instance.
         Available options are:
@@ -803,8 +803,8 @@ def instance_present(name, instance_name=None, instance_id=None, image_id=None,
                                      instance_profile_arn=instance_profile_arn,
                                      instance_profile_name=instance_profile_name,
                                      ebs_optimized=ebs_optimized, network_interfaces=network_interfaces,
-                                     network_interface_name=network_interface_name,
-                                     network_interface_id=network_interface_id,
+                                     network_interface_names=network_interface_names,
+                                     network_interface_ids=network_interface_ids,
                                      region=region, key=key, keyid=keyid, profile=profile)
         if not r or 'instance_id' not in r:
             ret['result'] = False
