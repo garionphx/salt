@@ -856,7 +856,7 @@ def run(image_id, name=None, tags=None, key_name=None, security_groups=None,
             security_group_ids += [r]
 
     # If we have more than one of these, then fail.
-    if sum(bool(network_interfaces), bool(network_interface_ids), bool(network_interface_names)) > 1:
+    if not salt.utils.exactly_one((network_interfaces, network_interface_ids, network_interface_names)):
         raise SaltInvocationError('Only one of network_interfaces, '
                                   'network_interface_ids or '
                                   'network_interface_names may be provided.')
