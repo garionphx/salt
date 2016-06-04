@@ -98,6 +98,18 @@ def _has_required_boto():
     else:
         return True
 
+def _has_required_boto3():
+    '''
+    Returns True/False boolean depending on if Boto is installed and correct
+    version.
+    '''
+    if not HAS_BOTO3:
+        return False
+    elif LooseVersion(boto3.__version__) < LooseVersion(required_boto3_version):
+        return False
+    else:
+        return True
+
 
 def _has_required_boto3():
     '''
