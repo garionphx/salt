@@ -197,6 +197,19 @@ an alternative root.
     :conf_master:`log_file`, :conf_master:`autosign_file`,
     :conf_master:`autoreject_file`, :conf_master:`pidfile`.
 
+.. conf_master:: conf_file
+
+``conf_file``
+-------------
+
+Default: ``/etc/salt/master``
+
+The path to the master's configuration file.
+
+.. code-block:: yaml
+
+    conf_file: /etc/salt/master
+
 .. conf_master:: pki_dir
 
 ``pki_dir``
@@ -282,11 +295,28 @@ Verify and set permissions on configuration directories at startup.
 
 Default: ``24``
 
-Set the number of hours to keep old job information.
+Set the number of hours to keep old job information. Note that setting this option
+to ``0`` disables the cache cleaner.
 
 .. code-block:: yaml
 
     keep_jobs: 24
+
+.. conf_master:: gather_job_timeout
+
+``gather_job_timeout``
+----------------------
+
+.. versionadded:: 2014.7.0
+
+Default: ``10``
+
+The number of seconds to wait when the client is requesting information
+about running jobs.
+
+.. code-block:: yaml
+
+    gather_job_timeout: 10
 
 .. conf_master:: timeout
 
@@ -378,12 +408,32 @@ grains for the master.
 
 Default: ``True``
 
-The master maintains a job cache. While this is a great addition, it can be
-a burden on the master for larger deployments (over 5000 minions).
+The master maintains a temporary job cache. While this is a great addition, it
+can be a burden on the master for larger deployments (over 5000 minions).
 Disabling the job cache will make previously executed jobs unavailable to
 the jobs system and is not generally recommended. Normally it is wise to make
 sure the master has access to a faster IO system or a tmpfs is mounted to the
 jobs dir.
+
+.. code-block:: yaml
+
+    job_cache: True
+
+.. note::
+
+    Setting the ``job_cache`` to ``False`` will not cache minion returns, but
+    the JID directory for each job is still created. The creation of the JID
+    directories is necessary because Salt uses those directories to check for
+    JID collisions. By setting this option to ``False``, the job cache
+    directory, which is ``/var/cache/salt/master/jobs/`` by default, will be
+    smaller, but the JID directories will still be present.
+
+    Note that the :conf_master:`keep_jobs` option can be set to a lower value,
+    such as ``1``, to limit the number of hours jobs are stored in the job
+    cache. (The default is 24 hours.)
+
+    Please see the :ref:`Managing the Job Cache <managing_the_job_cache>`
+    documentation for more information.
 
 .. conf_master:: minion_data_cache
 
@@ -490,6 +540,23 @@ Store all event returns _except_ the tags in a blacklist.
       - salt/master/not_this_tag
       - salt/master/or_this_one
 
+.. conf_master:: max_event_size
+
+``max_event_size``
+------------------
+
+.. versionadded:: 2014.7.0
+
+Default: ``1048576``
+
+Passing very large events can cause the minion to consume large amounts of
+memory. This value tunes the maximum size of a message allowed onto the
+master event bus. The value is expressed in bytes.
+
+.. code-block:: yaml
+
+    max_event_size: 1048576
+
 .. conf_master:: master_job_cache
 
 ``master_job_cache``
@@ -589,6 +656,24 @@ what you are doing! Transports are explained in :ref:`Salt Transports
 .. code-block:: yaml
 
     transport: zeromq
+
+``transport_opts``
+------------------
+
+Default: ``{}``
+
+(experimental) Starts multiple transports and overrides options for each transport with the provided dictionary
+This setting has a significant impact on performance and should not be changed unless you know
+what you are doing! Transports are explained in :ref:`Salt Transports
+<transports>`. The following example shows how to start a TCP transport alongside a ZMQ transport.
+
+.. code-block:: yaml
+
+    transport_opts:
+      tcp:
+        publish_port: 4605
+        ret_port: 4606
+      zeromq: []
 
 Salt-SSH Configuration
 ======================
@@ -788,6 +873,27 @@ Default: 12 hours
 .. code-block:: yaml
 
     token_expire: 43200
+
+.. conf_master:: token_expire_user_override
+
+``token_expire_user_override``
+------------------------------
+
+Default: ``False``
+
+Allow eauth users to specify the expiry time of the tokens they generate.
+
+A boolean applies to all users or a dictionary of whitelisted eauth backends
+and usernames may be given:
+
+.. code-block:: yaml
+
+    token_expire_user_override:
+      pam:
+        - fred
+        - tom
+      ldap:
+        - gary
 
 .. conf_master:: file_recv
 
@@ -990,6 +1096,40 @@ The renderer to use on the minions to render the state data.
 .. code-block:: yaml
 
     renderer: yaml_jinja
+
+.. conf_master:: jinja_trim_blocks
+
+``jinja_trim_blocks``
+---------------------
+
+.. versionadded:: 2014.1.0
+
+Default: ``False``
+
+If this is set to ``True``, the first newline after a Jinja block is
+removed (block, not variable tag!). Defaults to ``False`` and corresponds
+to the Jinja environment init variable ``trim_blocks``.
+
+.. code-block:: yaml
+
+    jinja_trim_blocks: False
+
+.. conf_master:: jinja_lstrip_blocks
+
+``jinja_lstrip_blocks``
+-----------------------
+
+.. versionadded:: 2014.1.0
+
+Default: ``False``
+
+If this is set to ``True``, leading spaces and tabs are stripped from the
+start of a line to a block. Defaults to ``False`` and corresponds to the
+Jinja environment init variable ``lstrip_blocks``.
+
+.. code-block:: yaml
+
+    jinja_lstrip_blocks: False
 
 .. conf_master:: failhard
 
@@ -1428,6 +1568,29 @@ Defines which branch/tag should be used as the ``base`` environment.
 .. versionchanged:: 2014.7.0
     Ability to specify the base on a per-remote basis was added. See :ref:`here
     <gitfs-per-remote-config>` for more info.
+
+.. conf_master:: gitfs_saltenv
+
+``gitfs_saltenv``
+*****************
+
+.. versionadded:: Carbon
+
+Default: ``[]``
+
+Global settings for :ref:`per-saltenv configuration parameters
+<gitfs-per-saltenv-config>`. Though per-saltenv configuration parameters are
+typically one-off changes specific to a single gitfs remote, and thus more
+often configured on a per-remote basis, this parameter can be used to specify
+per-saltenv changes which should apply to all remotes. For example, the below
+configuration will map the ``develop`` branch to the ``dev`` saltenv for all
+gitfs remotes.
+
+.. code-block:: yaml
+
+    gitfs_saltenv:
+      - dev:
+        - ref: develop
 
 .. conf_master:: gitfs_env_whitelist
 
@@ -2770,9 +2933,7 @@ master, specify the higher level master port with this configuration value.
 
     syndic_master_port: 4506
 
-.. conf_master:: syndic_log_file
-
-.. conf_master:: syndic_master_log_file
+.. conf_master:: syndic_pidfile
 
 ``syndic_pidfile``
 ------------------
@@ -2786,6 +2947,8 @@ master, specify the pidfile of the syndic daemon.
 
     syndic_pidfile: syndic.pid
 
+.. conf_master:: syndic_log_file
+
 ``syndic_log_file``
 -------------------
 
@@ -2797,6 +2960,24 @@ master, specify the log_file of the syndic daemon.
 .. code-block:: yaml
 
     syndic_log_file: salt-syndic.log
+
+.. master_conf:: syndic_failover
+
+``syndic_failover``
+-------------------
+
+.. versionadded:: 2016.3.0
+
+Default: ``random``
+
+The behaviour of the multi-syndic when connection to a master of masters failed.
+Can specify ``random`` (default) or ``ordered``. If set to ``random``, masters
+will be iterated in random order. If ``ordered`` is specified, the configured
+order will be used.
+
+.. code-block:: yaml
+
+    syndic_failover: random
 
 
 Peer Publish Settings
@@ -2998,14 +3179,14 @@ The format of the console logging messages. See also
 ``log_fmt_logfile``
 -------------------
 
-Default: ``%(asctime)s,%(msecs)03.0f [%(name)-17s][%(levelname)-8s] %(message)s``
+Default: ``%(asctime)s,%(msecs)03d [%(name)-17s][%(levelname)-8s] %(message)s``
 
 The format of the log file logging messages. See also
 :conf_log:`log_fmt_logfile`.
 
 .. code-block:: yaml
 
-    log_fmt_logfile: '%(asctime)s,%(msecs)03.0f [%(name)-17s][%(levelname)-8s] %(message)s'
+    log_fmt_logfile: '%(asctime)s,%(msecs)03d [%(name)-17s][%(levelname)-8s] %(message)s'
 
 
 .. conf_master:: log_granular_levels
@@ -3074,6 +3255,12 @@ The master can include configuration from other files. Per default the
 master will automatically include all config files from ``master.d/*.conf``
 where ``master.d`` is relative to the directory of the master configuration
 file.
+
+.. note::
+
+    Salt creates files in the ``master.d`` directory for its own use. These
+    files are prefixed with an underscore. A common example of this is the
+    ``_schedule.conf`` file.
 
 
 .. conf_master:: include

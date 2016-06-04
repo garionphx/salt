@@ -490,7 +490,7 @@ class SaltEvent(object):
                     break
                 mtag, data = self.unpack(raw, self.serial)
                 ret = {'data': data, 'tag': mtag}
-            except KeyboardInterrupt:
+            except (KeyboardInterrupt, RuntimeError):
                 return {'tag': 'salt/event/exit', 'data': {}}
             except tornado.iostream.StreamClosedError:
                 return None
@@ -817,12 +817,10 @@ class AsyncEventPublisher(object):
 
     TODO: remove references to "minion_event" whenever we need to use this for other things
     '''
-    def __init__(self, opts, publish_handler, io_loop=None):
+    def __init__(self, opts, io_loop=None):
         self.opts = salt.config.DEFAULT_MINION_OPTS.copy()
         default_minion_sock_dir = self.opts['sock_dir']
         self.opts.update(opts)
-
-        self.publish_handler = publish_handler
 
         self.io_loop = io_loop or tornado.ioloop.IOLoop.current()
         self._closing = False
@@ -909,7 +907,6 @@ class AsyncEventPublisher(object):
         '''
         try:
             self.publisher.publish(package)
-            self.io_loop.spawn_callback(self.publish_handler, package)
             return package
         # Add an extra fallback in case a forked process leeks through
         except Exception:
@@ -1096,7 +1093,7 @@ class EventReturn(salt.utils.process.SignalHandlingMultiprocessingProcess):
             del self.event_queue[:]
         else:
             log.error('Could not store return for event(s) - returner '
-                '\'{1}\' not found.'.format(self.opts['event_return']))
+                      '\'%s\' not found.', self.opts['event_return'])
 
     def run(self):
         '''

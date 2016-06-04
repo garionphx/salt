@@ -20,6 +20,7 @@ Full list of builtin execution modules
     aliases
     alternatives
     apache
+    apf
     aptpkg
     archive
     artifactory
@@ -74,6 +75,7 @@ Full list of builtin execution modules
     cp
     cpan
     cron
+    csf
     cyg
     cytest
     daemontools

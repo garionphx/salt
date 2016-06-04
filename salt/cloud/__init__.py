@@ -279,6 +279,7 @@ class CloudClient(object):
         Query basic instance information
         '''
         mapper = salt.cloud.Map(self._opts_defaults())
+        mapper.opts['selected_query_option'] = 'list_nodes'
         return mapper.map_providers_parallel(query_type)
 
     def full_query(self, query_type='list_nodes_full'):
@@ -1754,17 +1755,28 @@ class Map(Cloud):
         if self.opts.get('map', None) is None:
             return {}
 
+        local_minion_opts = copy.deepcopy(self.opts)
+        local_minion_opts['file_client'] = 'local'
+        self.minion = salt.minion.MasterMinion(local_minion_opts)
+
         if not os.path.isfile(self.opts['map']):
-            log.error(
-                'The specified map file does not exist: \'{0}\''.format(
-                    self.opts['map'])
-            )
-            raise SaltCloudNotFound()
+            if not (self.opts['map']).startswith('salt://'):
+                log.error(
+                    'The specified map file does not exist: \'{0}\''.format(
+                        self.opts['map'])
+                )
+                raise SaltCloudNotFound()
+        if (self.opts['map']).startswith('salt://'):
+            cached_map = self.minion.functions['cp.cache_file'](self.opts['map'])
+        else:
+            cached_map = self.opts['map']
         try:
             renderer = self.opts.get('renderer', 'yaml_jinja')
             rend = salt.loader.render(self.opts, {})
+            blacklist = self.opts.get('renderer_blacklist')
+            whitelist = self.opts.get('renderer_whitelist')
             map_ = compile_template(
-                self.opts['map'], rend, renderer
+                cached_map, rend, renderer, blacklist, whitelist
             )
         except Exception as exc:
             log.error(
