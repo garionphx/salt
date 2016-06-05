@@ -911,7 +911,7 @@ def run(image_id, name=None, tags=None, key_name=None, security_groups=None,
             groups=security_group_ids,
             device_index=0)]
 
-    interfaces = boto.ec2.networkinterface.NetworkInterfaceCollection(listed_interfaces)
+    interfaces = boto.ec2.networkinterface.NetworkInterfaceCollection(*listed_interfaces)
 
     conn = _get_conn(region=region, key=key, keyid=keyid, profile=profile)
 
