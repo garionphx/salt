@@ -871,18 +871,18 @@ def run(image_id, name=None, tags=None, key_name=None, security_groups=None,
         network_interface_ids = []
         for network_interface_name in network_interface_names:
             log.debug('Retrieveing network interface id for: %s', network_interface_name)
-            network_interface_id = get_network_interface_id(network_interface_name,
-                                                            region=region, key=key,
-                                                            keyid=keyid,
-                                                            profile=profile)
-            if not network_interface_id:
+            result = get_network_interface_id(network_interface_name,
+                                              region=region, key=key,
+                                              keyid=keyid,
+                                              profile=profile)
+            if 'result' not in result:
                 log.warning(
                     "Given network_interface_name '{0}' cannot be mapped to an "
                     "network_interface_id".format(network_interface_name)
                 )
                 continue
 
-            network_interface_ids.append(network_interface_id)
+            network_interface_ids.append(result['result'])
 
     if network_interface_ids:
         # Convert interface ids to ENI spec.
@@ -893,7 +893,7 @@ def run(image_id, name=None, tags=None, key_name=None, security_groups=None,
             log.debug('Retrieveing network interface spec for: %s', network_interface_id)
             listed_interface = boto.ec2.networkinterface.NetworkInterfaceSpecification(
                 network_interface_id=network_interface_id,
-                device_index=index) 
+                device_index=index)
 
             listed_interfaces.append(listed_interface)
     elif network_interfaces:
