@@ -861,12 +861,16 @@ def run(image_id, name=None, tags=None, key_name=None, security_groups=None,
                                   'network_interface_ids or '
                                   'network_interface_names may be provided.')
 
+    listed_interfaces = []
+
     if network_interface_names:
+        # Convert interface_names to interface_ids
         if isinstance(network_interface_names, str):
             network_interface_names = [network_interface_names]
 
         network_interface_ids = []
         for network_interface_name in network_interface_names:
+            log.debug('Retrieveing network interface id for: %s', network_interface_name)
             network_interface_id = get_network_interface_id(network_interface_name,
                                                             region=region, key=key,
                                                             keyid=keyid,
@@ -876,25 +880,36 @@ def run(image_id, name=None, tags=None, key_name=None, security_groups=None,
                     "Given network_interface_name '{0}' cannot be mapped to an "
                     "network_interface_id".format(network_interface_name)
                 )
+                continue
+
+            network_interface_ids.append(network_interface_id)
 
     if network_interface_ids:
+        # Convert interface ids to ENI spec.
         if isinstance(network_interface_ids, str):
             network_interface_ids = [network_interface_ids]
 
-        listed_interfaces = [boto.ec2.networkinterface.NetworkInterfaceSpecification(
-            network_interface_id=network_interface_id,
-            device_index=index
-        ) for index, network_interface_id in enumerate(network_interface_ids)]
+        for index, network_interface_id in enumerate(network_interface_ids):
+            log.debug('Retrieveing network interface spec for: %s', network_interface_id)
+            listed_interface = boto.ec2.networkinterface.NetworkInterfaceSpecification(
+                network_interface_id=network_interface_id,
+                device_index=index) 
+
+            listed_interfaces.append(listed_interface)
+    elif network_interfaces:
+        for network_interface in enumerate(network_interfaces):
+            log.debug('Creating network interface spec using: %s', network_interface)
+            listed_interface = boto.ec2.networkinterface.NetworkInterface(*network_interface)
+
+            listed_interfaces.append(listed_interface)
+
     else:
+        # Create a default interface.
+        log.debug('Creating network interface spec using defaults')
         listed_interfaces = [boto.ec2.networkinterface.NetworkInterfaceSpecification(
             subnet_id=subnet_id,
             groups=security_group_ids,
-            device_index=0
-        )]
-
-    if network_interfaces:
-        listed_interfaces = [boto.ec2.networkinterface.NetworkInterface(*network_interface)
-                             for network_interface in network_interfaces]
+            device_index=0)]
 
     interfaces = boto.ec2.networkinterface.NetworkInterfaceCollection(listed_interfaces)
 
